@@ -1,0 +1,14 @@
+{
+   "name" : "Process",
+   "projects" : [
+      {  "path" : "process",
+         "type" : "library",
+         "depLibraries": ["pthread"]
+      },
+      {  "path" : "testProcess",
+         "type" : "executable",
+         "dependencies": ["Process/process"]
+      }
+
+   ]
+}
