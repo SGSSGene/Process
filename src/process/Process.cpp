@@ -149,6 +149,7 @@ private:
 
 
 		waitpid(pid, &status, 0); /* wait for child to exit */
+		status = status >> 8;
 		close(stdoutpipe[WRITE_END]);
 		close(stderrpipe[WRITE_END]);
 		t1.join();
