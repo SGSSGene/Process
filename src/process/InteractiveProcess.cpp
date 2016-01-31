@@ -46,6 +46,22 @@ static bool fileExists(std::string const& _file) {
 	return std::ifstream(_file).good();
 }
 
+static std::string cwd() {
+	char buf[512]; //!TODO risky
+	char* ret = ::getcwd(buf, sizeof(buf));
+	if (ret == nullptr) {
+		throw std::runtime_error("getcwd faild");
+	}
+	return buf;
+}
+static void cwd(std::string const& _string) {
+	int ret = ::chdir(_string.c_str());
+	if (ret == -1) {
+		throw std::runtime_error("chdir to "+_string+" from "+cwd()+" failed");
+	}
+}
+
+
 
 
 class InteractiveProcessPImpl final {
@@ -54,8 +70,12 @@ class InteractiveProcessPImpl final {
 	char  input[65536];
 	pid_t pid;
 	int   status;
+
+	std::string oldCwd;
 public:
-	InteractiveProcessPImpl(std::vector<std::string> const& prog) {
+	InteractiveProcessPImpl(std::vector<std::string> const& prog, std::string const& _cwd) {
+		oldCwd = cwd();
+		cwd(_cwd);
 		fdm = posix_openpt(O_RDWR);
 		if (fdm < 0) {
 			throw std::runtime_error("InteractiveProcess: call posix_openpt() failed");
@@ -80,6 +100,7 @@ public:
 	}
 
 	~InteractiveProcessPImpl() {
+		cwd(oldCwd);
 	}
 private:
 	void childProcess(std::vector<std::string> const& _prog) {
@@ -182,7 +203,10 @@ private:
 
 
 InteractiveProcess::InteractiveProcess(std::vector<std::string> const& prog)
-	: pimpl { new InteractiveProcessPImpl(prog) } {
+	: pimpl { new InteractiveProcessPImpl(prog, cwd()) } {
+}
+InteractiveProcess::InteractiveProcess(std::vector<std::string> const& prog, std::string const& _cwd)
+	: pimpl { new InteractiveProcessPImpl(prog, _cwd) } {
 }
 
 InteractiveProcess::~InteractiveProcess() {

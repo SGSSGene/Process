@@ -45,6 +45,21 @@ static std::vector<std::string> explode(std::string const& _str, std::vector<std
 static bool fileExists(std::string const& _file) {
 	return std::ifstream(_file).good();
 }
+static std::string cwd() {
+	char buf[512]; //!TODO risky
+	char* ret = ::getcwd(buf, sizeof(buf));
+	if (ret == nullptr) {
+		throw std::runtime_error("getcwd faild");
+	}
+	return buf;
+}
+static void cwd(std::string const& _string) {
+	int ret = ::chdir(_string.c_str());
+	if (ret == -1) {
+		throw std::runtime_error("chdir to "+_string+" from "+cwd()+" failed");
+	}
+}
+
 
 
 
@@ -56,8 +71,12 @@ class ProcessPImpl final {
 
 	std::string stdcout;
 	std::string stdcerr;
+
+	std::string oldCwd;
 public:
-	ProcessPImpl(std::vector<std::string> const& prog) {
+	ProcessPImpl(std::vector<std::string> const& prog, std::string _cwd) {
+		oldCwd = cwd();
+		cwd(_cwd);
 		int ret1 = pipe(stdoutpipe);
 		int ret2 = pipe(stderrpipe);
 		if (ret1 == -1 || ret2 == -1) {
@@ -75,6 +94,7 @@ public:
 	~ProcessPImpl() {
 		close(stdoutpipe[READ_END]);
 		close(stderrpipe[READ_END]);
+		cwd(oldCwd);
 	}
 	auto cout() const -> std::string const& {
 		return stdcout;
@@ -163,8 +183,13 @@ private:
 };
 
 Process::Process(std::vector<std::string> const& prog)
-	: pimpl { new ProcessPImpl(prog) } {
+	: pimpl { new ProcessPImpl(prog, cwd()) } {
 }
+Process::Process(std::vector<std::string> const& prog, std::string const& _cwd)
+	: pimpl { new ProcessPImpl(prog, _cwd) } {
+}
+
+
 
 Process::~Process() {
 }
