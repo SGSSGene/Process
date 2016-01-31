@@ -6,13 +6,13 @@ int main(int argc, char** argv) {
 		process::Process p({argv[0], "para1"});
 		if (p.getStatus() != 0) {
 			std::cerr << "test failed" << std::endl;
-			return -1;
+			return EXIT_FAILURE;
 		} else {
 			std::cout << "test successful" << std::endl;
 		}
-		return 0;
+		return EXIT_SUCCESS;
 	} else if (argc == 2 && std::string(argv[1]) == "para1") {
-		return 0;
+		return EXIT_SUCCESS;
 	}
-	return -1;
+	return EXIT_FAILURE;
 }
