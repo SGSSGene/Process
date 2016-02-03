@@ -71,11 +71,9 @@ class InteractiveProcessPImpl final {
 	pid_t pid;
 	int   status;
 
-	std::string oldCwd;
+	std::string oldCwd {"."};
 public:
 	InteractiveProcessPImpl(std::vector<std::string> const& prog, std::string const& _cwd) {
-		oldCwd = cwd();
-		cwd(_cwd);
 		fdm = posix_openpt(O_RDWR);
 		if (fdm < 0) {
 			throw std::runtime_error("InteractiveProcess: call posix_openpt() failed");
@@ -93,6 +91,9 @@ public:
 
 		pid = fork();
 		if (pid == 0) {
+			oldCwd = cwd();
+			cwd(_cwd);
+
 			childProcess(prog);
 		} else {
 			parentProcess();
