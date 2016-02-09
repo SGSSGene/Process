@@ -134,7 +134,6 @@ private:
 		exit(127); /* only if execv fails */
 	}
 	void parentProcess() {
-		std::mutex mutex;
 		std::string _stdcout, _stdcerr;
 
 		std::thread t1 {[&] {
@@ -144,7 +143,6 @@ private:
 				buffer[0] = 0;
 				int size;
 				if ((size = read(stdoutpipe[READ_END], buffer, sizeof(buffer)-1)) >= 0) {
-					std::unique_lock<std::mutex> lock(mutex);
 					buffer[size] = 0;
 					_stdcout += buffer;
 				} else return;
@@ -158,7 +156,6 @@ private:
 				buffer[0] = 0;
 				int size;
 				if ((size = read(stderrpipe[READ_END], buffer, sizeof(buffer)-1)) >= 0) {
-					std::unique_lock<std::mutex> lock(mutex);
 					buffer[size] = 0;
 
 					_stdcerr += buffer;
@@ -174,11 +171,8 @@ private:
 		close(stderrpipe[WRITE_END]);
 		t1.join();
 		t2.join();
-		{
-			std::unique_lock<std::mutex> lock(mutex);
-			stdcout = _stdcout;
-			stdcerr = _stdcerr;
-		}
+		stdcout = _stdcout;
+		stdcerr = _stdcerr;
 	}
 };
 
