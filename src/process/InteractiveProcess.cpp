@@ -124,9 +124,22 @@ private:
 		close(1); // Close standard output (current terminal)
 		close(2); // Close standard error (current terminal)
 
-		dup(fds); // PTY becomes standard input (0)
-		dup(fds); // PTY becomes standard output (1)
-		dup(fds); // PTY becomes standard error (2)
+		int error;
+		error = dup(fds); // PTY becomes standard input (0)
+		if (error == -1) {
+			throw std::runtime_error(std::string("Error in InteractiveProcess creating pipes: (") + std::to_string(errno) + ") " + strerror(errno));
+		}
+
+		error = dup(fds); // PTY becomes standard output (1)
+		if (error == -1) {
+			throw std::runtime_error(std::string("Error in InteractiveProcess creating pipes: (") + std::to_string(errno) + ") " + strerror(errno));
+		}
+
+		error = dup(fds); // PTY becomes standard error (2)
+		if (error == -1) {
+			throw std::runtime_error(std::string("Error in InteractiveProcess creating pipes: (") + std::to_string(errno) + ") " + strerror(errno));
+		}
+
 
 		// Now the original file descriptor is useless
 		close(fds);
@@ -182,7 +195,10 @@ private:
 					throw std::runtime_error("error on reading standard input");
 				}
 				// Send data on the master side of PTY
-				write(fdm, input, rc);
+				int error = write(fdm, input, rc);
+				if (error == -1) {
+					throw std::runtime_error(std::string("Error reading standard input: (") + std::to_string(errno) + ") " + strerror(errno));
+				}
 			}
 
 			// If data on master side of PTY
@@ -195,7 +211,10 @@ private:
 				}
 				if (rc > 0) {
 					// Send data on standard output
-					write(1, input, rc);
+					int error = write(1, input, rc);
+					if (error == -1) {
+						throw std::runtime_error(std::string("Error reading standard input: (") + std::to_string(errno) + ") " + strerror(errno));
+					}
 				}
 			}
 		}
