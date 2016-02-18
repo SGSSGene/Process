@@ -3,6 +3,3 @@ projects:
   - path: process
     depLibraries:
       - pthread
-  - path: testProcess
-    dependencies:
-      - Process/process
