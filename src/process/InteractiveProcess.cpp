@@ -1,5 +1,8 @@
 #include "InteractiveProcess.h"
 
+#include <utils/utils.h>
+#include <fileSystem/fileSystem.h>
+
 #include <errno.h>
 #include <fcntl.h>
 #include <fstream>
@@ -17,49 +20,6 @@
 
 namespace process {
 
-static std::vector<std::string> explode(std::string const& _str, std::vector<std::string> const& _del) {
-	auto str = _str;
-	std::vector<std::string> retList;
-	while (str.length() > 0) {
-		auto p = str.find(_del[0]);
-		int delSize = _del[0].length();
-		for (auto const s : _del) {
-			auto _p = str.find(s);
-			if (_p == std::string::npos) continue;
-			if (_p < p) {
-				p = _p;
-				delSize = s.length();
-			}
-		}
-		auto _str = str.substr(0, p);
-		retList.push_back(_str);
-		if (p == std::string::npos) {
-			return retList;
-		}
-		str.erase(0, p + delSize);
-	}
-	return retList;
-}
-
-
-static bool fileExists(std::string const& _file) {
-	return std::ifstream(_file).good();
-}
-
-static std::string cwd() {
-	char buf[512]; //!TODO risky
-	char* ret = ::getcwd(buf, sizeof(buf));
-	if (ret == nullptr) {
-		throw std::runtime_error("getcwd faild");
-	}
-	return buf;
-}
-static void cwd(std::string const& _string) {
-	int ret = ::chdir(_string.c_str());
-	if (ret == -1) {
-		throw std::runtime_error("chdir to "+_string+" from "+cwd()+" failed");
-	}
-}
 
 
 
@@ -91,8 +51,8 @@ public:
 
 		pid = fork();
 		if (pid == 0) {
-			oldCwd = cwd();
-			cwd(_cwd);
+			oldCwd = utils::cwd();
+			utils::cwd(_cwd);
 
 			childProcess(prog);
 		} else {
@@ -101,7 +61,7 @@ public:
 	}
 
 	~InteractiveProcessPImpl() {
-		cwd(oldCwd);
+		utils::cwd(oldCwd);
 	}
 private:
 	void childProcess(std::vector<std::string> const& _prog) {
@@ -155,8 +115,8 @@ private:
 		auto s       = _prog[0];
 		auto execStr = s;
 
-		for (auto const& _s : explode(envPath, {":"})) {
-			if (fileExists(_s+"/"+s)) {
+		for (auto const& _s : utils::explode(envPath, {":"})) {
+			if (fileSystem::fileExists(_s+"/"+s)) {
 				execStr = _s+"/"+s;
 				break;
 			}
@@ -223,7 +183,7 @@ private:
 
 
 InteractiveProcess::InteractiveProcess(std::vector<std::string> const& prog)
-	: pimpl { new InteractiveProcessPImpl(prog, cwd()) } {
+	: pimpl { new InteractiveProcessPImpl(prog, utils::cwd()) } {
 }
 InteractiveProcess::InteractiveProcess(std::vector<std::string> const& prog, std::string const& _cwd)
 	: pimpl { new InteractiveProcessPImpl(prog, _cwd) } {
