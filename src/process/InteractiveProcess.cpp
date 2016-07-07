@@ -1,8 +1,5 @@
 #include "InteractiveProcess.h"
 
-#include <utils/utils.h>
-#include <fileSystem/fileSystem.h>
-
 #include <errno.h>
 #include <fcntl.h>
 #include <fstream>
@@ -20,6 +17,47 @@
 
 namespace process {
 
+namespace utils {
+	auto cwd() -> std::string {
+		char buf[512]; //!TODO risky
+		char* ret = ::getcwd(buf, sizeof(buf));
+		if (ret == nullptr) {
+			throw std::runtime_error("getcwd faild");
+		}
+		return buf;
+	}
+	void cwd(std::string const& _cwd) {
+		int ret = ::chdir(_cwd.c_str());
+		if (ret == -1) {
+			throw std::runtime_error("chdir to "+_cwd+" from "+cwd()+" failed");
+		}
+	}
+
+	auto explode(std::string const& _str, std::string const& _del) -> std::vector<std::string> {
+		auto str = _str;
+		std::vector<std::string> retList;
+		while (str.length() > 0) {
+			auto p = str.find(_del);
+			retList.push_back(str.substr(0, p));
+			if (p == std::string::npos) {
+				return retList;
+			}
+			str.erase(0, p + _del.size());
+		}
+
+		return retList;
+	}
+}
+namespace fileSystem {
+	auto fileExists(std::string const& _file) -> bool {
+		FILE* filePtr = fopen(_file.c_str(), "r");
+		if (nullptr == filePtr)
+			return (errno != ENOENT);
+
+		fclose(filePtr);
+		return true;
+	}
+}
 
 
 
