@@ -3,4 +3,3 @@ projects:
   - path: process
     depLibraries:
       - pthread
-    auto: true
